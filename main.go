@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -72,12 +73,12 @@ func goWriteFile(fileName string) {
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
-	msg := ""
+	var msg strings.Builder
 	for i := 0; i < 1024*16; i++ {
-		msg += fmt.Sprintf("%d", i%10)
+		msg.WriteString(fmt.Sprintf("%d", i%10))
 	}
-
-	file.WriteString(msg + "\n")
+	msg.WriteString("\n")
+	file.WriteString(msg.String())
 	unlockFile(file)
 	cost := time.Since(start)
 	fmt.Println(fmt.Sprintf("[%8d] go test, cost: %s", GetGID(), cost))
