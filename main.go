@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"os/exec"
 	"sync"
@@ -16,6 +14,7 @@ var wg = sync.WaitGroup{}
 
 func main() {
 	fmt.Println("start test")
+	start := time.Now()
 	// 判断文件是否存在，如果存在需要在开始测试前清除
 	fileName := "./test.log"
 	file, err := os.Create(fileName)
@@ -26,15 +25,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for i := 0; i < 150; i++ {
-		wg.Add(4)
-		go runPhp("put")
-		go runPhp("write")
-		go runPhp("log")
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		//go runPhp("put")
+		//go runPhp("write")
+		//go runPhp("log")
 		go goWriteFile("./test.log")
 	}
 	wg.Wait()
-	fmt.Println("end test")
+	cost := time.Since(start)
+	fmt.Println("end test. cost:", cost)
 }
 
 func runPhp(t string) {
@@ -61,16 +61,20 @@ func goWriteFile(fileName string) {
 	}
 	lockFile(file)
 
-	jsonMap := make(map[string]interface{}, 0)
-	jsonMap["time"] = time.Now()
-	jsonMap["type"] = "local"
-	jsonMap["rand"] = rand.Int()
-	str, err := json.Marshal(jsonMap)
-	if err != nil {
-		log.Fatal(err)
+	//jsonMap := make(map[string]interface{}, 0)
+	//jsonMap["time"] = time.Now()
+	//jsonMap["type"] = "local"
+	//jsonMap["rand"] = rand.Int()
+	//str, err := json.Marshal(jsonMap)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	msg := ""
+	for i := 0; i < 1024*16; i++ {
+		msg += fmt.Sprintf("%d", i%10)
 	}
 
-	file.WriteString(string(str) + "\n")
+	file.WriteString(msg + "\n")
 	unlockFile(file)
 	cost := time.Since(start)
 	fmt.Println("local", cost)

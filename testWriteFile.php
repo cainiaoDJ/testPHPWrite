@@ -2,12 +2,6 @@
 
 declare(strict_types=1);
 date_default_timezone_set('Asia/Shanghai');
-
-use Monolog\Handler\StreamHandler;
-use Monolog\Logger;
-
-require_once "./vendor/autoload.php";
-
 class WriteTest
 {
     const FILE_PATH = './test.log';
@@ -29,7 +23,7 @@ class WriteTest
             return FALSE;
         }
         flock($fp, LOCK_EX);
-        fwrite($fp, self::getJSON('fwrite'));
+        fwrite($fp, self::getMsg());
         flock($fp, LOCK_UN);
         fclose($fp);
     }
@@ -41,29 +35,33 @@ class WriteTest
             'time' => $time,
             'type' => $type,
             'rand' => rand(1, 1000000),
+            'end' => 'yes'
         ];
         return json_encode($json, JSON_UNESCAPED_UNICODE) . PHP_EOL;
+    }
+
+    public static function getMsg()
+    {
+        $msg = "";
+        for ($i = 0; $i < 1024 * 16; $i++) {
+            $msg .= sprintf("%d", $i % 10);
+        }
+        return $msg . "\n";
     }
 
     public static function getDateTime()
     {
         $time = microtime(true);
         $second = (int)$time;
-        $uscond = (int)(($time - (float)$second) * 1000000);
+        $uscond = (int)(($time - (float)$second) * 10000);
         return sprintf("%s.%06d", date('Y-m-d H:i:s', (int)$time), $uscond);
-    }
-
-    public static function testLog()
-    {
-        $logger = new Logger('json');
-        $logger->pushHandler(new StreamHandler(self::FILE_PATH, Logger::WARNING, true, null, true));
-        $logger->warning(self::getJSON('log'));
     }
 }
 
 function forkTest($type)
 {
-    $count = 150;
+    $count = 20;
+    $pids = [];
     for ($i = 0; $i < $count; $i++) {
         $pid = pcntl_fork();
         if ($pid == -1) {
@@ -71,16 +69,15 @@ function forkTest($type)
             die('could not fork');
         } else if ($pid) {
             //父进程会得到子进程号，所以这里是父进程执行的逻辑
-            pcntl_wait($status); //等待子进程中断，防止子进程成为僵尸进程。
+            //pcntl_wait($status); //等待子进程中断，防止子进程成为僵尸进程。
+            $pids[] = $pid;
+            //echo "{$pid} start\n";
         } else {
             //子进程得到的$pid为0, 所以这里是子进程执行的逻辑。
             $time = microtime(true);
             switch ($type) {
                 case 'put':
                     WriteTest::putFile();
-                    break;
-                case 'log':
-                    WriteTest::testLog();
                     break;
                 default:
                     WriteTest::writeFile();
@@ -90,16 +87,23 @@ function forkTest($type)
             exit(0);
         }
     }
+
+    foreach ($pids as $pid) {
+        pcntl_waitpid($pid, $status);
+        //echo "{$pid} exit with {$status}\n";
+    }
 }
 
+$start = microtime(true);
 if ($argv[1] == 'put') {
     WriteTest::putFile();
-} elseif ($argv[1] == 'log') {
-    WriteTest::testLog();
 } elseif ($argv[1] == 'fork') {
-    //$time = microtime(true);
+    if (file_exists('./test.log')) {
+        unlink('./test.log');
+    }
     forkTest($argv[2]);
-    //echo sprintf("cost %f s", microtime(true) - $time);
 } else {
     WriteTest::writeFile();
 }
+$cost = (microtime(true) - $start) * 1000.0;
+echo sprintf("end test. cost %f ms", $cost);
