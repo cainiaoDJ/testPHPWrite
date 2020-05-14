@@ -83,7 +83,7 @@ function forkTest($type)
                     WriteTest::writeFile();
                     break;
             }
-            echo sprintf("cost %f ms\n", (microtime(true) - $time) * 1000.0);
+            echo sprintf("[%8d] php test, cost %f ms\n", getmypid(), (microtime(true) - $time) * 1000.0);
             exit(0);
         }
     }

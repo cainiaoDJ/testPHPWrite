@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"runtime"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -77,7 +80,7 @@ func goWriteFile(fileName string) {
 	file.WriteString(msg + "\n")
 	unlockFile(file)
 	cost := time.Since(start)
-	fmt.Println("local", cost)
+	fmt.Println(fmt.Sprintf("[%8d] go test, cost: %s", GetGID(), cost))
 	wg.Done()
 }
 
@@ -93,4 +96,12 @@ func unlockFile(file *os.File) {
 	if err != nil {
 		log.Fatalf("cannot flock directory %s - %s", file.Name(), err)
 	}
+}
+func GetGID() uint64 {
+	b := make([]byte, 64)
+	b = b[:runtime.Stack(b, false)]
+	b = bytes.TrimPrefix(b, []byte("goroutine "))
+	b = b[:bytes.IndexByte(b, ' ')]
+	n, _ := strconv.ParseUint(string(b), 10, 64)
+	return n
 }
