@@ -23,7 +23,11 @@ class WriteTest
             return FALSE;
         }
         flock($fp, LOCK_EX);
-        fwrite($fp, self::getMsg());
+        $msg = '';
+        for ($i = 0; $i < 100; $i++) {
+            $msg .= self::getMsg();
+        }
+        fwrite($fp, $msg);
         flock($fp, LOCK_UN);
         fclose($fp);
     }

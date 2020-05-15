@@ -73,12 +73,15 @@ func goWriteFile(fileName string) {
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
-	var msg strings.Builder
+	var msg, msg2 strings.Builder
 	for i := 0; i < 1024*16; i++ {
 		msg.WriteString(fmt.Sprintf("%d", i%10))
 	}
 	msg.WriteString("\n")
-	file.WriteString(msg.String())
+	for l := 0; l < 100; l++ {
+		msg2.WriteString(msg.String())
+	}
+	file.WriteString(msg2.String())
 	unlockFile(file)
 	cost := time.Since(start)
 	fmt.Println(fmt.Sprintf("[%8d] go test, cost: %s", GetGID(), cost))
